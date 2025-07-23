@@ -3,6 +3,8 @@ FROM python:3.9-slim
 
 # Set work directory
 WORKDIR /flask_api
+ENV PYTHONPATH=/flask_api
+
 
 # Install dependencies
 COPY requirements.txt requirements.txt

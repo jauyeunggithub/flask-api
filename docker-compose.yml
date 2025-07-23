@@ -8,7 +8,7 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - .:/app
+      - .:/flask_api
 
 networks:
   flask_net:
