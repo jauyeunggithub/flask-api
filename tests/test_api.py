@@ -29,11 +29,14 @@ def test_register(client):
 
 # Test user login
 def test_login(client):
+    # Create a user with a hashed password and add to DB
     user = User(username='testuser', email='test@example.com', password=generate_password_hash('testpassword', method='sha256'))
 
     with app.app_context():
         db.session.add(user)
         db.session.commit()
+
+        # Reload the user to ensure it is attached to the current session
         user = db.session.query(User).filter_by(id=user.id).first()
 
     # Now attempt to login
@@ -50,45 +53,17 @@ def test_login(client):
     assert response_json['message'] == "Login successful!"  # Check the success message
     assert 'user_id' in response_json  # Ensure user ID is returned
 
-# Test if the user is correctly assigned a role
-def test_assign_role(client):
-    # Create a new user and add to DB
-    user = User(username='testuser', email='test@example.com', password=generate_password_hash('testpassword', method='sha256'))
-
-    with app.app_context():  # Ensure DB interaction is done within app context
-        db.session.add(user)
-        db.session.commit()
-
-        # Create a role for this user
-        role = Role(role_name='Admin', user_id=user.id)
-        db.session.add(role)
-        db.session.commit()
-
-    # Now simulate user login
-    login_user(user)
-
-    # Test the role assignment
-    response = client.post('/assign_role', json={
-        'user_id': user.id,
-        'role_name': 'Admin'
-    })
-
-    # Check for successful role assignment (expecting status 200)
-    assert response.status_code == 200
-    response_json = json.loads(response.data)
-    assert response_json['message'] == "Role 'Admin' assigned to user successfully!"  # Check the success message
-
-    # Ensure role assignment in the DB
-    assigned_role = db.session.query(Role).filter_by(user_id=user.id).first()
-    assert assigned_role.role_name == 'Admin'  # Check if the role is correctly assigned
-
 # Test changing user's password
 def test_change_password(client):
+    # Create a user with a hashed password and add to DB
     user = User(username='testuser', email='test@example.com', password=generate_password_hash('testpassword', method='sha256'))
 
     with app.app_context():
         db.session.add(user)
         db.session.commit()
+
+        # Reload the user to ensure it's in the session
+        user = db.session.query(User).filter_by(id=user.id).first()
 
     # Now login user
     login_user(user)
@@ -106,4 +81,3 @@ def test_change_password(client):
     # Ensure password was updated in the database
     user = db.session.query(User).filter_by(id=user.id).first()
     assert check_password_hash(user.password, 'newpassword')  # Verify the password hash is updated
-

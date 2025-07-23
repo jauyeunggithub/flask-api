@@ -32,7 +32,12 @@ def test_assign_role(client):
         user = db.session.query(User).filter_by(id=user.id).first()
 
     # Simulate user login
-    login_user(user)
+    with app.test_client() as client:
+        response = client.post('/login', json={
+            'email': 'test@example.com',
+            'password': 'testpassword'
+        })
+        assert response.status_code == 200  # Ensure login is successful
 
     # Assign the 'admin' role to the user (send data as JSON)
     response = client.post('/assign_role', json={
