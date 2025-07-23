@@ -5,7 +5,6 @@ from app.models import User, Role, EmailNotification
 from flask_mail import Message
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# Route for the home page
 
 
 @app.route('/')

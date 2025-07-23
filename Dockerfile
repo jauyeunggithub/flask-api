@@ -2,7 +2,7 @@
 FROM python:3.9-slim
 
 # Set work directory
-WORKDIR /app
+WORKDIR /flask_api
 
 # Install dependencies
 COPY requirements.txt requirements.txt
@@ -15,4 +15,4 @@ COPY . .
 EXPOSE 5000
 
 # Start the Flask app
-CMD ["python", "app/__init__.py"]
+CMD ["flask", "run"]

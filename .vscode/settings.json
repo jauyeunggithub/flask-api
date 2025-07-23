@@ -1,0 +1,10 @@
+{
+  "files.associations": {
+    "*.py": "python"
+  },
+  "[python]": {
+    "editor.formatOnType": true,
+    "editor.defaultFormatter": "ms-python.autopep8",
+    "editor.formatOnSave": false
+  }
+}

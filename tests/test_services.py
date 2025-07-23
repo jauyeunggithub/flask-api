@@ -1,5 +1,4 @@
 from app import app, mail
-from app.models import User, EmailNotification
 from flask_mail import Message
 from flask import current_app
 import pytest

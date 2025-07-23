@@ -1,5 +1,5 @@
 from app import app, db
-from app.models import User, Role
+from flask_app.models import User, Role
 from flask_login import login_user
 import pytest
 

@@ -2,7 +2,7 @@ import pytest
 from app import app, db
 from flask import json
 from flask_login import login_user
-from app.models import User, Role
+from flask_app.models import User, Role
 
 # Setup the test client
 
