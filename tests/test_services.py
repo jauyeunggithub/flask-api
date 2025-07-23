@@ -1,27 +1,29 @@
-from app import app, mail
 from flask_mail import Message
-from flask import current_app
+from app import app, mail
 import pytest
 
-# Test email sending service
+
 @pytest.fixture
 def client():
-    with app.app_context():  # Ensure the app context is active during tests
+    app.config['MAIL_SUPPRESS_SEND'] = True
+    app.config['MAIL_DEFAULT_SENDER'] = 'noreply@example.com'
+
+    with app.app_context():
         with app.test_client() as client:
-            yield client  # Provide the test client for the test
+            mail.init_app(app)
+            yield client
 
 def test_send_email_service(client):
-    with app.app_context():  # Ensure app context is available for mail handling
-        msg = Message(
-            subject='Test Subject',
-            recipients=['recipient@example.com'],
-            body='Test email body'
-        )
+    msg = Message(
+        subject='Test Subject',
+        recipients=['recipient@example.com'],
+        body='Test email body'
+    )
 
-        # Send the email through Flask-Mail
+    with mail.record_messages() as outbox:
         mail.send(msg)
 
-        # Check if the email has been added to the outgoing emails list
-        assert len(current_app.mail.outbox) == 1  # Ensure one email is in the outbox
-        assert current_app.mail.outbox[0].subject == 'Test Subject'  # Verify the subject
-        assert current_app.mail.outbox[0].body == 'Test email body'  # Verify the body
+        assert len(outbox) == 1
+        assert outbox[0].subject == 'Test Subject'
+        assert outbox[0].recipients == ['recipient@example.com']
+        assert outbox[0].body == 'Test email body'
