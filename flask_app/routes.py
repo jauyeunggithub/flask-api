@@ -1,4 +1,4 @@
-from flask import jsonify
+from flask import jsonify, request
 from flask_login import login_user, login_required, logout_user, current_user
 from app import app, db, mail
 from flask_app.models import User, Role, EmailNotification
