@@ -1,8 +1,9 @@
+import pytest
 from app import app, db
 from flask_app.models import User, Role
 from flask_login import login_user
-import pytest
 from werkzeug.security import generate_password_hash
+from flask import json
 
 # Setup the test client and ensure database context is handled
 @pytest.fixture
@@ -33,15 +34,18 @@ def test_assign_role(client):
     # Simulate user login
     login_user(user)
 
-    # Assign the 'admin' role to the user
-    response = client.post('/assign_role', data={
+    # Assign the 'admin' role to the user (send data as JSON)
+    response = client.post('/assign_role', json={
         'user_id': user.id,
         'role_name': 'admin'
     })
 
     # Check if the role assignment was successful
     assert response.status_code == 200
-    assert b"Role 'admin' assigned to user!" in response.data
+
+    # Parse the JSON response and check the success message
+    response_json = json.loads(response.data)
+    assert response_json['message'] == "Role 'admin' assigned to user successfully!"  # Check the success message
 
     # Verify that the 'admin' role was added to the user
     role = Role.query.filter_by(role_name='admin').first()

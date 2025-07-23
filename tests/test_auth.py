@@ -1,8 +1,9 @@
+import pytest
 from app import app, db
 from flask_app.models import User
 from flask_login import login_user
-import pytest
 from werkzeug.security import generate_password_hash
+from flask import json
 
 # Setup the test client and ensure database context is handled
 @pytest.fixture
@@ -16,14 +17,15 @@ def client():
 
 # Test user registration
 def test_user_registration(client):
-    response = client.post('/register', data={
+    response = client.post('/register', json={
         'username': 'testuser',
         'email': 'test@example.com',
         'password': 'testpassword'
     })
-    # Expect redirect after successful registration
-    assert response.status_code == 302  # 302 indicates a redirect
-    assert b'Login' in response.data  # Ensure the response contains 'Login'
+    # Expect a JSON response with a success message
+    assert response.status_code == 201  # 201 indicates successful creation
+    response_json = json.loads(response.data)
+    assert response_json['message'] == "User registered successfully!"  # Check the success message
 
 # Test user login
 def test_user_login(client):
@@ -34,7 +36,7 @@ def test_user_login(client):
         password=generate_password_hash('testpassword', method='sha256')
     )
 
-    with app.app_context():  # Ensure DB interaction is done within the app context
+    with app.app_context():  # Ensure DB interaction is done within app context
         db.session.add(user)
         db.session.commit()  # Commit the user to the database
 
@@ -42,13 +44,18 @@ def test_user_login(client):
         user = db.session.query(User).filter_by(id=user.id).first()
 
     # Now attempt to log in with the created user
-    response = client.post('/login', data={
+    response = client.post('/login', json={
         'email': 'test@example.com',
         'password': 'testpassword'
     })
 
-    # Expect a redirect (status code 302) after a successful login
-    assert response.status_code == 302  # 302 indicates a redirect
+    # Check if login was successful (status code 200 for success)
+    assert response.status_code == 200
 
-    # After login, user should be redirected to the dashboard or home page
-    assert b'Dashboard' in response.data  # Adjust based on your actual dashboard route content
+    # Parse the JSON response and check for success message
+    response_json = json.loads(response.data)
+    assert response_json['message'] == "Login successful!"  # Check the success message
+    assert 'user_id' in response_json  # Ensure the user ID is returned in the response
+
+    # You can also check for additional things (like checking if user is logged in by verifying session or cookies)
+

@@ -3,7 +3,7 @@ from app import app, db
 from flask import json
 from flask_login import login_user
 from flask_app.models import User, Role
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Setup the test client and ensure database context is handled
 @pytest.fixture
@@ -17,38 +17,38 @@ def client():
 
 # Test user registration
 def test_register(client):
-    response = client.post('/register', data={
+    response = client.post('/register', json={
         'username': 'testuser',
         'email': 'test@example.com',
         'password': 'testpassword'
     })
-    # Expecting redirect after successful registration
-    assert response.status_code == 302
-    assert b'Login' in response.data  # Ensure the response contains the login text
+    # Expecting a JSON response with a success message
+    assert response.status_code == 201  # Created status code
+    response_json = json.loads(response.data)
+    assert response_json['message'] == "User registered successfully!"  # Check the success message
 
 # Test user login
 def test_login(client):
-    # First, create the user
     user = User(username='testuser', email='test@example.com', password=generate_password_hash('testpassword', method='sha256'))
 
-    with app.app_context():  # Ensure we're in the app context for DB operations
+    with app.app_context():
         db.session.add(user)
-        db.session.commit()  # Commit the user to the database
-
-        # After committing, reload the user to ensure it's in the current session
+        db.session.commit()
         user = db.session.query(User).filter_by(id=user.id).first()
 
     # Now attempt to login
-    response = client.post('/login', data={
+    response = client.post('/login', json={
         'email': 'test@example.com',
         'password': 'testpassword'
     })
 
-    # Check that login succeeded (expecting a 200 or redirect)
-    assert response.status_code == 302  # Expect a redirect (302) after login
+    # Check that login succeeded (expecting a 200 status code)
+    assert response.status_code == 200  # Expecting a success message in JSON
 
-    # Optionally check if user was logged in (e.g., check for user ID in the session or some user-specific data)
-    assert b'Logout' in response.data  # Or check something else to confirm user is logged in
+    # Check if the response contains the login success message
+    response_json = json.loads(response.data)
+    assert response_json['message'] == "Login successful!"  # Check the success message
+    assert 'user_id' in response_json  # Ensure user ID is returned
 
 # Test if the user is correctly assigned a role
 def test_assign_role(client):
@@ -59,7 +59,7 @@ def test_assign_role(client):
         db.session.add(user)
         db.session.commit()
 
-        # Create a role for this user (make sure Role model is set up correctly)
+        # Create a role for this user
         role = Role(role_name='Admin', user_id=user.id)
         db.session.add(role)
         db.session.commit()
@@ -67,6 +67,43 @@ def test_assign_role(client):
     # Now simulate user login
     login_user(user)
 
-    # Test the role assignment (this could be a simple assertion to check role assignment)
+    # Test the role assignment
+    response = client.post('/assign_role', json={
+        'user_id': user.id,
+        'role_name': 'Admin'
+    })
+
+    # Check for successful role assignment (expecting status 200)
+    assert response.status_code == 200
+    response_json = json.loads(response.data)
+    assert response_json['message'] == "Role 'Admin' assigned to user successfully!"  # Check the success message
+
+    # Ensure role assignment in the DB
     assigned_role = db.session.query(Role).filter_by(user_id=user.id).first()
     assert assigned_role.role_name == 'Admin'  # Check if the role is correctly assigned
+
+# Test changing user's password
+def test_change_password(client):
+    user = User(username='testuser', email='test@example.com', password=generate_password_hash('testpassword', method='sha256'))
+
+    with app.app_context():
+        db.session.add(user)
+        db.session.commit()
+
+    # Now login user
+    login_user(user)
+
+    # Test password change
+    response = client.post('/change_password', json={
+        'new_password': 'newpassword'
+    })
+
+    # Check for successful password change (expecting status 200)
+    assert response.status_code == 200
+    response_json = json.loads(response.data)
+    assert response_json['message'] == "Password updated successfully!"  # Check the success message
+
+    # Ensure password was updated in the database
+    user = db.session.query(User).filter_by(id=user.id).first()
+    assert check_password_hash(user.password, 'newpassword')  # Verify the password hash is updated
+
