@@ -1,0 +1,15 @@
+services:
+  app:
+    build: .
+    container_name: flask_app
+    environment:
+      - FLASK_APP=app
+      - FLASK_ENV=development
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+
+networks:
+  flask_net:
+    driver: bridge
