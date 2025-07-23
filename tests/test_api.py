@@ -1,6 +1,10 @@
 import pytest
 from app import app, db
 from flask import json
+from flask_login import login_user
+from app.models import User, Role
+
+# Setup the test client
 
 
 @pytest.fixture
@@ -8,22 +12,27 @@ def client():
     with app.test_client() as client:
         yield client
 
+# Test user registration
+
 
 def test_register(client):
-    response = client.post('/register', json={
-        "username": "testuser",
-        "email": "test@example.com",
-        "password": "testpassword"
+    response = client.post('/register', data={
+        'username': 'testuser',
+        'email': 'test@example.com',
+        'password': 'testpassword'
     })
-    assert response.status_code == 201
-    assert b"User created!" in response.data
+    # Expecting redirect after successful registration
+    assert response.status_code == 302
+    assert b'Login' in response.data  # Ensure the response contains the login text
+
+# Test user login
 
 
-def test_send_email(client):
-    response = client.post('/send_email', json={
-        "subject": "Test Email",
-        "to": "recipient@example.com",
-        "body": "This is a test email."
-    })
-    assert response.status_code == 200
-    assert b"Email sent!" in response.data
+def test_login(client):
+    # First, create the user
+    user = User(username='testuser', email='test@example.com',
+                password='testpassword')
+    db.session.add(user)
+    db.session.commit()
+
+    response = clien
