@@ -53,7 +53,6 @@ def test_login(client):
     assert response_json['message'] == "Login successful!"  # Check the success message
     assert 'user_id' in response_json  # Ensure user ID is returned
 
-# Test changing user's password
 def test_change_password(client):
     # Create a user with a hashed password and add to DB
     user = User(username='testuser', email='test@example.com', password=generate_password_hash('testpassword', method='sha256'))
@@ -65,8 +64,17 @@ def test_change_password(client):
         # Reload the user to ensure it's in the session
         user = db.session.query(User).filter_by(id=user.id).first()
 
-    # Now login user
-    login_user(user)
+    # Simulate login by making a POST request to the /login route
+    response = client.post('/login', json={
+        'email': 'test@example.com',
+        'password': 'testpassword'
+    })
+
+    # Check that login succeeded (expecting a 200 status code)
+    assert response.status_code == 200
+    response_json = json.loads(response.data)
+    assert response_json['message'] == "Login successful!"  # Check the success message
+    assert 'user_id' in response_json  # Ensure user ID is returned
 
     # Test password change
     response = client.post('/change_password', json={
@@ -81,3 +89,4 @@ def test_change_password(client):
     # Ensure password was updated in the database
     user = db.session.query(User).filter_by(id=user.id).first()
     assert check_password_hash(user.password, 'newpassword')  # Verify the password hash is updated
+
